@@ -46,7 +46,6 @@ st.markdown("""
     .stApp > header { display: none !important; }
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
-    [data-testid="stStatusWidget"] { display: none !important; }
 
     .stApp {
         background: var(--bg-primary);
@@ -103,9 +102,9 @@ st.markdown("""
     
     .hero-title {
         font-family: 'Outfit', sans-serif !important;
-        font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800;
-        letter-spacing: -1px; color: var(--text-primary); margin: 0 0 1rem; 
-        line-height: 1.5 !important; padding-bottom: 0.5rem;
+        font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800;
+        letter-spacing: -0.5px; color: var(--text-primary); margin: 0 0 1rem; 
+        line-height: 1.6 !important; padding-bottom: 0.5rem; display: block;
     }
     .hero-title .acc {
         color: var(--blue);
@@ -370,7 +369,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-data = api_get("/teams")
+with st.spinner("Le serveur IA se réveille... (Cela peut prendre jusqu'à 60 secondes au premier lancement)"):
+    data = api_get("/teams")
 teams = data["teams"]
 
 # ═══ MATCH SETUP ═══════════════════════════════════════
