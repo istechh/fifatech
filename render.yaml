@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: fifa-match-predictor-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python -c "from app.train import train_and_save; train_and_save()"
+    startCommand: uvicorn app.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
