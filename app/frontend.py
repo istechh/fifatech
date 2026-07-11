@@ -105,7 +105,7 @@ st.markdown("""
         font-family: 'Outfit', sans-serif !important;
         font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800;
         letter-spacing: -1px; color: var(--text-primary); margin: 0 0 1rem; 
-        line-height: 1.4; /* Fixed squished text */
+        line-height: 1.5 !important; padding-bottom: 0.5rem;
     }
     .hero-title .acc {
         color: var(--blue);
