@@ -324,7 +324,7 @@ st.markdown("""
 # ═══ API HELPERS ═══════════════════════════════════════
 def api_get(endpoint):
     try:
-        resp = requests.get(f"{API_URL}{endpoint}", timeout=60)
+        resp = requests.get(f"{API_URL}{endpoint}", timeout=120)
         resp.raise_for_status()
         return resp.json()
     except requests.ConnectionError:
@@ -337,7 +337,7 @@ def api_get(endpoint):
 
 def api_post(endpoint, data):
     try:
-        resp = requests.post(f"{API_URL}{endpoint}", json=data, timeout=60)
+        resp = requests.post(f"{API_URL}{endpoint}", json=data, timeout=120)
         resp.raise_for_status()
         return resp.json()
     except requests.ConnectionError:
@@ -368,7 +368,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-with st.spinner("Le serveur IA se réveille... (Cela peut prendre jusqu'à 60 secondes au premier lancement)"):
+with st.spinner("Le serveur IA se réveille... (Cela peut prendre jusqu'à 2 minutes au premier lancement)"):
     data = api_get("/teams")
 teams = data["teams"]
 
@@ -409,7 +409,7 @@ st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # ═══ RESULTS ═══════════════════════════════════════════
 if predict:
-    with st.spinner("Analyse en cours... (Le premier chargement peut prendre jusqu'à 60s)"):
+    with st.spinner("Analyse en cours... (Le premier chargement peut prendre jusqu'à 2 minutes)"):
         result = api_post("/predict", {
             "home_team": home_team,
             "away_team": away_team,
