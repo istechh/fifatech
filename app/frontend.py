@@ -365,7 +365,6 @@ st.markdown("""
 <div class="hero animate-in">
     <div class="hero-tag">Prédiction par Intelligence Artificielle</div>
     <p class="hero-title">Prédisez le <span class="acc">résultat</span> avant le coup de sifflet</p>
-    <p class="hero-sub">Analyse basée sur les classements FIFA, la forme récente et les statistiques historiques.</p>
 </div>
 """, unsafe_allow_html=True)
 
