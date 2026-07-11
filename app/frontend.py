@@ -17,23 +17,23 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@600;700;800&display=swap');
 
     :root {
-        --blue: #3b82f6;
-        --blue-hover: #2563eb;
-        --purple: #8b5cf6;
-        --green: #10b981;
-        --gold: #f59e0b;
-        --red: #ef4444;
+        --blue: #2563eb;
+        --blue-hover: #1d4ed8;
+        --purple: #7c3aed;
+        --green: #059669;
+        --gold: #d97706;
+        --red: #dc2626;
         
-        /* Simpler, solid professional colors (Slate theme) */
-        --bg-primary: #0f172a;
-        --bg-card: #1e293b;
-        --bg-card-hover: #334155;
-        --border: #334155;
-        --border-active: #475569;
+        /* Clean white light theme */
+        --bg-primary: #ffffff;
+        --bg-card: #f8fafc;
+        --bg-card-hover: #f1f5f9;
+        --border: #e2e8f0;
+        --border-active: #cbd5e1;
         
-        --text-primary: #f8fafc;
-        --text-secondary: #cbd5e1;
-        --text-dim: #94a3b8;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-dim: #64748b;
         
         --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px;
     }
@@ -105,7 +105,7 @@ st.markdown("""
         font-family: 'Outfit', sans-serif !important;
         font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800;
         letter-spacing: -1px; color: var(--text-primary); margin: 0 0 1rem; 
-        line-height: 1.2; /* FIX: Line height was too tight */
+        line-height: 1.4; /* Fixed squished text */
     }
     .hero-title .acc {
         color: var(--blue);
@@ -163,7 +163,7 @@ st.markdown("""
         padding-top: 28px;
     }
     .vs-pill {
-        background: var(--bg-primary);
+        background: var(--bg-card);
         border: 1px solid var(--border); border-radius: var(--r-sm);
         padding: 6px 14px; font-family: 'JetBrains Mono', monospace !important;
         font-size: .85rem; font-weight: 700; color: var(--text-dim);
@@ -275,7 +275,7 @@ st.markdown("""
     .match-row {
         display: flex; align-items: center; gap: 12px; padding: 12px 16px;
         border-radius: var(--r-sm); margin-bottom: 8px;
-        background: var(--bg-primary); border: 1px solid var(--border);
+        background: var(--bg-card); border: 1px solid var(--border);
         font-size: .9rem;
     }
     .match-badge {
@@ -364,7 +364,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero animate-in">
     <div class="hero-tag">Prédiction par Intelligence Artificielle</div>
-    <p class="hero-title">Prédisez le <span class="acc">résultat</span><br>avant le coup de sifflet</p>
+    <p class="hero-title">Prédisez le <span class="acc">résultat</span> avant le coup de sifflet</p>
     <p class="hero-sub">Analyse basée sur les classements FIFA, la forme récente et les statistiques historiques.</p>
 </div>
 """, unsafe_allow_html=True)
@@ -373,7 +373,8 @@ data = api_get("/teams")
 teams = data["teams"]
 
 # ═══ MATCH SETUP ═══════════════════════════════════════
-st.markdown('<div class="glass glass-elevated">', unsafe_allow_html=True)
+# Removed HTML div wrappers that caused the empty box
+st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 c1, c_vs, c2 = st.columns([5, 1.2, 5])
 
@@ -404,7 +405,7 @@ _, btn_c, _ = st.columns([1, 2.2, 1])
 with btn_c:
     predict = st.button("🔮  Lancer la Prédiction", use_container_width=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # ═══ RESULTS ═══════════════════════════════════════════
 if predict:
@@ -579,11 +580,11 @@ if predict:
     fig_r.update_layout(
         polar=dict(
             bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(visible=True, range=[0, 10], gridcolor="rgba(255,255,255,0.06)", tickfont=dict(color="#3d4a6a", size=9), linecolor="rgba(255,255,255,0.06)"),
-            angularaxis=dict(gridcolor="rgba(255,255,255,0.06)", tickfont=dict(color="#7b8bb2", size=12), linecolor="rgba(255,255,255,0.06)"),
+            radialaxis=dict(visible=True, range=[0, 10], gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#64748b", size=9), linecolor="rgba(0,0,0,0.06)"),
+            angularaxis=dict(gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#475569", size=12), linecolor="rgba(0,0,0,0.06)"),
         ),
         showlegend=True,
-        legend=dict(font=dict(color="#eef2ff", size=12), x=0.5, xanchor="center", y=-0.12, orientation="h", bgcolor="rgba(0,0,0,0)"),
+        legend=dict(font=dict(color="#0f172a", size=12), x=0.5, xanchor="center", y=-0.12, orientation="h", bgcolor="rgba(0,0,0,0)"),
         paper_bgcolor="rgba(0,0,0,0)", height=420,
         margin=dict(l=50, r=50, t=30, b=60),
     )
@@ -639,9 +640,9 @@ if predict:
     ))
     fig_g.update_layout(
         height=300, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        xaxis=dict(gridcolor="rgba(255,255,255,0.04)", showgrid=False, zeroline=False, tickfont=dict(color="#3d4a6a", size=10)),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.05)", zeroline=False, tickfont=dict(color="#3d4a6a", size=10), title=dict(text="Buts marqués", font=dict(color="#4a5578", size=11))),
-        legend=dict(font=dict(color="#eef2ff", size=11), orientation="h", y=1.12, x=0.5, xanchor="center", bgcolor="rgba(0,0,0,0)"),
+        xaxis=dict(gridcolor="rgba(0,0,0,0.04)", showgrid=False, zeroline=False, tickfont=dict(color="#64748b", size=10)),
+        yaxis=dict(gridcolor="rgba(0,0,0,0.05)", zeroline=False, tickfont=dict(color="#64748b", size=10), title=dict(text="Buts marqués", font=dict(color="#475569", size=11))),
+        legend=dict(font=dict(color="#0f172a", size=11), orientation="h", y=1.12, x=0.5, xanchor="center", bgcolor="rgba(0,0,0,0)"),
         margin=dict(l=10, r=10, t=20, b=10), hovermode="x unified",
     )
     st.markdown('<div class="glass" style="padding:10px">', unsafe_allow_html=True)
