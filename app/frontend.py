@@ -112,7 +112,8 @@ st.markdown("""
     }
     .hero-sub {
         font-size: 1.05rem; color: var(--text-secondary);
-        font-weight: 400; max-width: 550px; margin: 0 auto; line-height: 1.6;
+        font-weight: 400; max-width: 550px; margin: 0 auto; 
+        line-height: 1.6; text-align: center;
     }
 
     /* ── SOLID CARD ── */
