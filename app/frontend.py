@@ -380,17 +380,32 @@ st.markdown("""
 
 
 # ═══ API HELPERS ═══════════════════════════════════════
+def _http_error_detail(e: requests.HTTPError) -> str:
+    """Extract a user-facing message from an HTTPError, without assuming
+    the response body is JSON — Render's proxy can return an HTML error
+    page (502/503) instead of our API's JSON while the service is waking
+    up or restarting."""
+    if e.response is None:
+        return str(e)
+    try:
+        return e.response.json().get("detail", str(e))
+    except ValueError:
+        return f"le serveur a répondu de façon inattendue (HTTP {e.response.status_code})."
+
+
 def api_get(endpoint: str):
     try:
         resp = requests.get(f"{API_URL}{endpoint}", timeout=120)
         resp.raise_for_status()
         return resp.json()
+    except requests.Timeout:
+        st.error("⚠️ Le serveur met trop de temps à répondre. Réessayez dans quelques instants.")
+        st.stop()
     except requests.ConnectionError:
         st.error("⚠️ Backend non disponible. Réessayez plus tard.")
         st.stop()
     except requests.HTTPError as e:
-        detail = e.response.json().get("detail", str(e)) if e.response is not None else str(e)
-        st.error(f"⚠️ Erreur : {detail}")
+        st.error(f"⚠️ Erreur : {_http_error_detail(e)}")
         st.stop()
     except Exception as e:
         st.error(f"⚠️ Erreur API : {e}")
@@ -402,12 +417,17 @@ def api_post(endpoint: str, data: dict):
         resp = requests.post(f"{API_URL}{endpoint}", json=data, timeout=120)
         resp.raise_for_status()
         return resp.json()
+    except requests.Timeout:
+        st.error("⚠️ Le serveur met trop de temps à répondre. Réessayez dans quelques instants.")
+        st.stop()
     except requests.ConnectionError:
         st.error("⚠️ Backend non disponible. Réessayez plus tard.")
         st.stop()
     except requests.HTTPError as e:
-        detail = e.response.json().get("detail", str(e)) if e.response is not None else str(e)
-        st.error(f"⚠️ Erreur : {detail}")
+        st.error(f"⚠️ Erreur : {_http_error_detail(e)}")
+        st.stop()
+    except Exception as e:
+        st.error(f"⚠️ Erreur API : {e}")
         st.stop()
 
 
