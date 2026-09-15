@@ -19,23 +19,29 @@ st.markdown("""
     :root {
         --blue: #2563eb;
         --blue-hover: #1d4ed8;
-        --purple: #7c3aed;
         --green: #059669;
         --gold: #d97706;
         --red: #dc2626;
-        
+
         /* Clean white light theme */
         --bg-primary: #ffffff;
         --bg-card: #f8fafc;
         --bg-card-hover: #f1f5f9;
         --border: #e2e8f0;
         --border-active: #cbd5e1;
-        
+
         --text-primary: #0f172a;
         --text-secondary: #475569;
         --text-dim: #64748b;
-        
+
         --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px;
+
+        /* Spacing scale */
+        --space-xs: 4px; --space-sm: 8px; --space-md: 16px;
+        --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
+
+        /* Label/badge type scale — was .65/.7/.75rem scattered across 9 rules */
+        --text-xs: .7rem;
     }
 
     /* ── RESET & BASE ── */
@@ -84,7 +90,7 @@ st.markdown("""
         color: var(--blue);
     }
     .nav-badge {
-        font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+        font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
         color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border);
         border-radius: 99px; padding: 4px 12px;
     }
@@ -95,7 +101,7 @@ st.markdown("""
         display: inline-flex; align-items: center; gap: 6px;
         background: var(--bg-card); border: 1px solid var(--border);
         border-radius: 99px; padding: 5px 14px;
-        font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+        font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
         color: var(--text-secondary); margin-bottom: 1.2rem;
     }
     .hero-tag::before { content: '●'; font-size: 0.5rem; color: var(--blue); }
@@ -115,13 +121,15 @@ st.markdown("""
         line-height: 1.6; text-align: center;
     }
 
-    /* ── SOLID CARD ── */
-    .glass {
-        background: var(--bg-card); 
+    /* ── CARD BASE (shared by .glass / .stat-card / .pred-box) ── */
+    .glass, .stat-card, .pred-box {
+        background: var(--bg-card);
         border: 1px solid var(--border);
-        border-radius: var(--r-lg); 
-        padding: 24px;
         transition: border-color .2s;
+    }
+    .glass {
+        border-radius: var(--r-lg);
+        padding: var(--space-lg);
     }
 
     /* ── SECTION TITLES ── */
@@ -137,9 +145,15 @@ st.markdown("""
 
     /* ── TEAM TAG ── */
     .team-tag {
-        font-size: 0.75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+        font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
         color: var(--text-secondary); margin-bottom: 8px;
         display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ── LABEL/BADGE type scale ── */
+    .nav-badge, .hero-tag, .team-tag, .pred-label, .stat-card .label,
+    .match-badge, .cmp-table th, .prob-seg small, .cmp-winner::after {
+        font-size: var(--text-xs) !important;
     }
 
     /* ── SELECTBOX ── */
@@ -184,17 +198,38 @@ st.markdown("""
     .stButton > button:hover {
         background: var(--blue-hover) !important;
     }
+    .stButton > button:disabled {
+        background: var(--bg-card-hover) !important;
+        color: var(--text-dim) !important;
+        border: 1px solid var(--border) !important;
+        cursor: not-allowed !important;
+    }
+
+    /* ── NATIVE ALERTS & SPINNER (st.error/st.warning/st.spinner) ──
+       Keep Streamlit's default semantic colors (already close to our
+       --red/--gold), just align font + shape with the rest of the app. */
+    [data-testid="stAlert"] {
+        border-radius: var(--r-md) !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    [data-testid="stAlert"] p {
+        font-family: 'Inter', sans-serif !important;
+        font-size: .95rem !important;
+    }
+    [data-testid="stSpinner"] p {
+        font-family: 'Inter', sans-serif !important;
+        color: var(--text-secondary) !important;
+    }
 
     /* ── PREDICTION BOX ── */
     .pred-box {
-        background: var(--bg-card);
-        border: 1px solid var(--border); border-radius: var(--r-xl);
+        border-radius: var(--r-xl);
         padding: 2.5rem 2rem; text-align: center;
         margin: 1.5rem 0 1rem;
     }
     .pred-label {
-        font-size: .75rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
-        color: var(--text-dim); margin-bottom: 12px;
+        font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+        color: var(--text-secondary); margin-bottom: 12px;
     }
     .pred-result {
         font-family: 'Outfit', sans-serif !important;
@@ -226,7 +261,7 @@ st.markdown("""
         padding: 0 4px; overflow: hidden; gap: 2px;
     }
     .prob-seg small {
-        font-size: .65rem; font-weight: 500; opacity: .9;
+        font-weight: 500; opacity: .9;
         font-family: 'Inter', sans-serif !important; white-space: nowrap;
         overflow: hidden; text-overflow: ellipsis; max-width: 90%;
     }
@@ -236,17 +271,16 @@ st.markdown("""
 
     /* ── STAT CARDS ── */
     .stat-grid {
-        display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin: 1.5rem 0;
+        display: grid; grid-template-columns: repeat(3,1fr); gap: var(--space-md); margin: 1.5rem 0;
     }
     .stat-card {
-        background: var(--bg-card); border: 1px solid var(--border);
         border-radius: var(--r-md); padding: 20px 16px;
         text-align: center;
     }
     .stat-icon { font-size: 1.5rem; margin-bottom: 8px; display: block; }
     .stat-card .label {
-        font-size: .65rem; font-weight: 600; letter-spacing: 1px;
-        text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+        font-weight: 600; letter-spacing: 1px;
+        text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;
     }
     .stat-card .value {
         font-family: 'JetBrains Mono', monospace !important;
@@ -260,28 +294,28 @@ st.markdown("""
     .table-wrapper { width: 100%; overflow-x: auto; border-radius: var(--r-md); }
     .cmp-table { width: 100%; border-collapse: collapse; min-width: 400px; }
     .cmp-table th {
-        font-size: .75rem; font-weight: 600; text-transform: uppercase;
-        color: var(--text-dim); padding: 16px; text-align: center; border-bottom: 2px solid var(--border);
+        font-weight: 600; text-transform: uppercase;
+        color: var(--text-dim); padding: var(--space-md); text-align: center; border-bottom: 2px solid var(--border);
     }
     .cmp-table th:first-child { text-align: left; }
-    .cmp-table td { padding: 16px; font-size: .95rem; border-bottom: 1px solid var(--border); text-align: center; }
+    .cmp-table td { padding: var(--space-md); font-size: .95rem; border-bottom: 1px solid var(--border); text-align: center; }
     .cmp-table td:first-child { text-align: left; color: var(--text-secondary); }
     .cmp-table tr:last-child td { border-bottom: none; }
     .cmp-home-val { color: var(--blue); font-weight: 600; font-family: 'JetBrains Mono', monospace !important; }
     .cmp-away-val { color: var(--green); font-weight: 600; font-family: 'JetBrains Mono', monospace !important; }
-    .cmp-winner::after { content: '★'; font-size: .7rem; margin-left: 6px; opacity: .8; }
+    .cmp-winner::after { content: '★'; margin-left: 6px; opacity: .8; }
 
     /* ── MATCH ROW ── */
     .match-row {
-        display: flex; align-items: center; gap: 12px; padding: 12px 16px;
-        border-radius: var(--r-sm); margin-bottom: 8px;
+        display: flex; align-items: center; gap: 12px; padding: 12px var(--space-md);
+        border-radius: var(--r-sm); margin-bottom: var(--space-sm);
         background: var(--bg-card); border: 1px solid var(--border);
         font-size: .9rem;
     }
     .match-badge {
         width: 32px; height: 32px; border-radius: 6px;
         display: flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: .75rem; flex-shrink: 0;
+        font-weight: 700; flex-shrink: 0;
     }
     .mb-w { background: rgba(16, 185, 129, 0.15); color: var(--green); }
     .mb-d { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
@@ -312,10 +346,34 @@ st.markdown("""
         .block-container { padding: 0 1rem 3rem !important; }
         .hero { padding: 1.5rem 0.5rem; }
         .stat-grid { grid-template-columns: repeat(2,1fr); }
+        /* st.columns stacks vertically here — the 28px top offset was
+           tuned for a horizontal row and looks like a stray gap once
+           the two selects are stacked. */
+        .vs-center { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
     }
     @media (max-width: 480px) {
         .stat-grid { grid-template-columns: 1fr; }
         .nav-badge { display: none; }
+
+        /* Comparison table: real mobile layout (stacked key/value rows)
+           instead of a horizontal-scroll table. */
+        .table-wrapper { overflow-x: visible; }
+        .cmp-table { min-width: 0; }
+        .cmp-table thead { display: none; }
+        .cmp-table, .cmp-table tbody, .cmp-table tr, .cmp-table td { display: block; width: 100%; }
+        .cmp-table tr { padding: var(--space-sm) 0; border-bottom: 1px solid var(--border); }
+        .cmp-table tr:last-child { border-bottom: none; }
+        .cmp-table td {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 3px 0; border-bottom: none !important; text-align: right;
+        }
+        .cmp-table td:first-child { color: var(--text-secondary); font-weight: 500; text-align: left; }
+        .cmp-table td::before {
+            content: attr(data-label);
+            font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .5px;
+            color: var(--text-dim);
+        }
+        .cmp-table td:first-child::before { content: none; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -549,7 +607,11 @@ def render_comparison_table(home_stats: dict, away_stats: dict, home_team: str, 
     for label, hv, av, h_wins in rows:
         hc = "cmp-home-val cmp-winner" if h_wins else "cmp-home-val"
         ac = "cmp-away-val cmp-winner" if not h_wins else "cmp-away-val"
-        table_html += f'<tr><td>{label}</td><td class="{hc}">{fmt(hv, "N/A")}</td><td class="{ac}">{fmt(av, "N/A")}</td></tr>'
+        table_html += (
+            f'<tr><td data-label="Statistique">{label}</td>'
+            f'<td data-label="{home_team}" class="{hc}">{fmt(hv, "N/A")}</td>'
+            f'<td data-label="{away_team}" class="{ac}">{fmt(av, "N/A")}</td></tr>'
+        )
     table_html += "</tbody></table></div></div>"
     st.markdown(table_html, unsafe_allow_html=True)
 
@@ -705,9 +767,11 @@ if submit and home_team != away_team:
         away_stats = fetch_team_stats(away_team)
 
     render_stat_cards(home_stats, away_stats, home_team, away_team)
-    render_comparison_table(home_stats, away_stats, home_team, away_team)
-    render_radar_chart(home_stats, away_stats, home_team, away_team)
-    render_recent_form(home_team, away_team, home_stats, away_stats)
-    render_goals_evolution(home_team, away_team, home_stats, away_stats)
+
+    with st.expander("📊 Voir l'analyse détaillée (comparatif, profil, forme, historique)"):
+        render_comparison_table(home_stats, away_stats, home_team, away_team)
+        render_radar_chart(home_stats, away_stats, home_team, away_team)
+        render_recent_form(home_team, away_team, home_stats, away_stats)
+        render_goals_evolution(home_team, away_team, home_stats, away_stats)
 
 render_footer()
