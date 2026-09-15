@@ -30,11 +30,11 @@ def compute_team_form(results_df: pd.DataFrame, window: int = 10) -> pd.DataFram
         lambda x: 1 if x > 0 else (-1 if x < 0 else 0)
     )
 
-    home_side = results_df[["date", "home_team", "home_score", "away_score", "match_outcome"]].rename(
-        columns={"home_team": "team", "home_score": "goals_for", "away_score": "goals_against", "match_outcome": "outcome"}
+    home_side = results_df[["date", "home_team", "away_team", "home_score", "away_score", "match_outcome"]].rename(
+        columns={"home_team": "team", "away_team": "opponent", "home_score": "goals_for", "away_score": "goals_against", "match_outcome": "outcome"}
     )
-    away_side = results_df[["date", "away_team", "away_score", "home_score", "match_outcome"]].rename(
-        columns={"away_team": "team", "away_score": "goals_for", "home_score": "goals_against"}
+    away_side = results_df[["date", "away_team", "home_team", "away_score", "home_score", "match_outcome"]].rename(
+        columns={"away_team": "team", "home_team": "opponent", "away_score": "goals_for", "home_score": "goals_against"}
     )
     away_side["outcome"] = -results_df["match_outcome"]
 

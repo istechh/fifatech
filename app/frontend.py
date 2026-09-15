@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 import plotly.graph_objects as go
 
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_URL = os.environ.get("API_URL", "http://localhost:8000").rstrip("/")
 
 st.set_page_config(
     page_title="ISO Predict · Football IA",
@@ -322,7 +322,7 @@ st.markdown("""
 
 
 # ═══ API HELPERS ═══════════════════════════════════════
-def api_get(endpoint):
+def api_get(endpoint: str):
     try:
         resp = requests.get(f"{API_URL}{endpoint}", timeout=120)
         resp.raise_for_status()
@@ -330,12 +330,16 @@ def api_get(endpoint):
     except requests.ConnectionError:
         st.error("⚠️ Backend non disponible. Réessayez plus tard.")
         st.stop()
+    except requests.HTTPError as e:
+        detail = e.response.json().get("detail", str(e)) if e.response is not None else str(e)
+        st.error(f"⚠️ Erreur : {detail}")
+        st.stop()
     except Exception as e:
         st.error(f"⚠️ Erreur API : {e}")
         st.stop()
 
 
-def api_post(endpoint, data):
+def api_post(endpoint: str, data: dict):
     try:
         resp = requests.post(f"{API_URL}{endpoint}", json=data, timeout=120)
         resp.raise_for_status()
@@ -344,88 +348,99 @@ def api_post(endpoint, data):
         st.error("⚠️ Backend non disponible. Réessayez plus tard.")
         st.stop()
     except requests.HTTPError as e:
-        detail = e.response.json().get("detail", str(e)) if e.response else str(e)
+        detail = e.response.json().get("detail", str(e)) if e.response is not None else str(e)
         st.error(f"⚠️ Erreur : {detail}")
         st.stop()
 
 
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_teams() -> list[str]:
+    return api_get("/teams")["teams"]
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def fetch_team_stats(team: str) -> dict:
+    return api_get(f"/team_stats/{team}")
+
+
+def fmt(value, empty: str = "—") -> str:
+    """Format a stat for display, treating 0 as a real value (not 'missing')."""
+    return empty if value is None else str(value)
+
+
 # ═══ NAVBAR ════════════════════════════════════════════
-st.markdown("""
-<div class="navbar">
-    <div class="nav-brand">
-        <span class="nav-ball">⚽</span>
-        <span><span class="acc">ISO</span>Predict</span>
+def render_navbar():
+    st.markdown("""
+    <div class="navbar">
+        <div class="nav-brand">
+            <span class="nav-ball">⚽</span>
+            <span><span class="acc">ISO</span>Predict</span>
+        </div>
+        <div class="nav-badge">IA Football</div>
     </div>
-    <div class="nav-badge">IA Football</div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# ═══ HERO ══════════════════════════════════════════════
-st.markdown("""
-<div class="hero animate-in">
-    <div class="hero-tag">Prédiction par Intelligence Artificielle</div>
-    <p class="hero-title">Prédisez le <span class="acc">résultat</span> avant le coup de sifflet</p>
-</div>
-""", unsafe_allow_html=True)
 
-with st.spinner("Le serveur IA se réveille... (Cela peut prendre jusqu'à 2 minutes au premier lancement)"):
-    data = api_get("/teams")
-teams = data["teams"]
+def render_hero():
+    st.markdown("""
+    <div class="hero">
+        <div class="hero-tag">Prédiction par Intelligence Artificielle</div>
+        <p class="hero-title">Prédisez le <span class="acc">résultat</span> avant le coup de sifflet</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ═══ MATCH SETUP ═══════════════════════════════════════
-# Removed HTML div wrappers that caused the empty box
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
-c1, c_vs, c2 = st.columns([5, 1.2, 5])
+# ═══ MATCH SELECTOR ════════════════════════════════════
+def render_match_selector(teams: list[str]):
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    c1, c_vs, c2 = st.columns([5, 1.2, 5])
 
-with c1:
-    st.markdown('<div class="team-tag">🏠 Équipe Domicile</div>', unsafe_allow_html=True)
-    home_team = st.selectbox(
-        "Domicile", teams,
-        index=teams.index("France") if "France" in teams else 0,
-        key="home", label_visibility="collapsed",
-    )
+    with c1:
+        st.markdown('<div class="team-tag">🏠 Équipe Domicile</div>', unsafe_allow_html=True)
+        home_team = st.selectbox(
+            "Domicile", teams,
+            index=teams.index("France") if "France" in teams else 0,
+            key="home", label_visibility="collapsed",
+        )
 
-with c_vs:
-    st.markdown('<div class="vs-center"><span class="vs-pill">VS</span></div>', unsafe_allow_html=True)
+    with c_vs:
+        st.markdown('<div class="vs-center"><span class="vs-pill">VS</span></div>', unsafe_allow_html=True)
 
-with c2:
-    st.markdown('<div class="team-tag">✈️ Équipe Extérieur</div>', unsafe_allow_html=True)
-    away_team = st.selectbox(
-        "Extérieur", teams,
-        index=teams.index("Brazil") if "Brazil" in teams else 1,
-        key="away", label_visibility="collapsed",
-    )
+    with c2:
+        st.markdown('<div class="team-tag">✈️ Équipe Extérieur</div>', unsafe_allow_html=True)
+        away_team = st.selectbox(
+            "Extérieur", teams,
+            index=teams.index("Brazil") if "Brazil" in teams else 1,
+            key="away", label_visibility="collapsed",
+        )
 
-st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-neutral = st.checkbox("🏟️ Match sur terrain neutre")
-st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    neutral = st.checkbox("🏟️ Match sur terrain neutre")
 
-_, btn_c, _ = st.columns([1, 2.2, 1])
-with btn_c:
-    predict = st.button("🔮  Lancer la Prédiction", use_container_width=True)
+    if home_team == away_team:
+        st.warning("⚠️ Choisissez deux équipes différentes pour lancer une prédiction.")
 
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    _, btn_c, _ = st.columns([1, 2.2, 1])
+    with btn_c:
+        submit = st.button(
+            "🔮  Lancer la Prédiction",
+            use_container_width=True,
+            disabled=home_team == away_team,
+        )
 
-# ═══ RESULTS ═══════════════════════════════════════════
-if predict:
-    with st.spinner("Analyse en cours... (Le premier chargement peut prendre jusqu'à 2 minutes)"):
-        result = api_post("/predict", {
-            "home_team": home_team,
-            "away_team": away_team,
-            "neutral": neutral,
-        })
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    return home_team, away_team, neutral, submit
 
+
+# ═══ RESULT SECTIONS ═══════════════════════════════════
+def render_prediction_box(result: dict):
     prob = result["probabilities"]
-    p_home = prob.get("Domicile", 0)
-    p_draw = prob.get("Nul", 0)
-    p_away = prob.get("Extérieur", 0)
-
+    p_home, p_draw, p_away = prob.get("Domicile", 0), prob.get("Nul", 0), prob.get("Extérieur", 0)
     pred = result["prediction"]
     pred_cls = "pred-home" if "Domicile" in pred else ("pred-draw" if "Nul" in pred else "pred-away")
     confidence = max(p_home, p_draw, p_away)
 
-    # ── Prediction box
     st.markdown(f"""
     <div class="pred-box">
         <p class="pred-label">Résultat prédit</p>
@@ -441,8 +456,10 @@ if predict:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    return p_home, p_draw, p_away
 
-    # ── Probability bar
+
+def render_probability_bar(p_home: float, p_draw: float, p_away: float, home_team: str, away_team: str):
     st.markdown(f"""
     <div class="prob-bar">
         <div class="prob-seg prob-home" style="flex:{p_home}">
@@ -457,53 +474,51 @@ if predict:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Team stats
-    with st.spinner("Chargement des statistiques…"):
-        home_stats = api_get(f"/team_stats/{home_team}")
-        away_stats = api_get(f"/team_stats/{away_team}")
 
+def render_stat_cards(home_stats: dict, away_stats: dict, home_team: str, away_team: str):
     st.markdown(f"""
     <div class="stat-grid">
         <div class="stat-card stat-home">
             <span class="stat-icon">🏆</span>
             <div class="label">Classement FIFA</div>
-            <div class="value">{home_stats['rank'] or '—'}</div>
+            <div class="value">{fmt(home_stats['rank'])}</div>
             <div class="sub">🏠 {home_team}</div>
         </div>
         <div class="stat-card stat-home">
             <span class="stat-icon">⭐</span>
             <div class="label">Points FIFA</div>
-            <div class="value">{home_stats['total_points'] or '—'}</div>
+            <div class="value">{fmt(home_stats['total_points'])}</div>
             <div class="sub">🏠 {home_team}</div>
         </div>
         <div class="stat-card stat-home">
             <span class="stat-icon">📈</span>
             <div class="label">Forme récente</div>
-            <div class="value">{home_stats['avg_outcome'] or '—'}</div>
+            <div class="value">{fmt(home_stats['avg_outcome'])}</div>
             <div class="sub">🏠 {home_team}</div>
         </div>
         <div class="stat-card stat-away">
             <span class="stat-icon">🏆</span>
             <div class="label">Classement FIFA</div>
-            <div class="value">{away_stats['rank'] or '—'}</div>
+            <div class="value">{fmt(away_stats['rank'])}</div>
             <div class="sub">✈️ {away_team}</div>
         </div>
         <div class="stat-card stat-away">
             <span class="stat-icon">⭐</span>
             <div class="label">Points FIFA</div>
-            <div class="value">{away_stats['total_points'] or '—'}</div>
+            <div class="value">{fmt(away_stats['total_points'])}</div>
             <div class="sub">✈️ {away_team}</div>
         </div>
         <div class="stat-card stat-away">
             <span class="stat-icon">📈</span>
             <div class="label">Forme récente</div>
-            <div class="value">{away_stats['avg_outcome'] or '—'}</div>
+            <div class="value">{fmt(away_stats['avg_outcome'])}</div>
             <div class="sub">✈️ {away_team}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Comparison table
+
+def render_comparison_table(home_stats: dict, away_stats: dict, home_team: str, away_team: str):
     st.markdown('<div class="sec"><span class="sec-dot"></span> Comparaison directe</div>', unsafe_allow_html=True)
 
     def cmp_val(a, b):
@@ -513,18 +528,18 @@ if predict:
             return False
 
     rows = [
-        ("🏅 Classement FIFA", home_stats['rank'] or 'N/A', away_stats['rank'] or 'N/A',
-         cmp_val(away_stats['rank'], home_stats['rank'])),
-        ("⭐ Points FIFA", home_stats['total_points'] or 'N/A', away_stats['total_points'] or 'N/A',
-         cmp_val(home_stats['total_points'], away_stats['total_points'])),
-        ("⚽ Buts marqués (moy.)", home_stats['avg_goals_scored'], away_stats['avg_goals_scored'],
-         cmp_val(home_stats['avg_goals_scored'], away_stats['avg_goals_scored'])),
-        ("🛡️ Buts encaissés (moy.)", home_stats['avg_goals_conceded'], away_stats['avg_goals_conceded'],
-         cmp_val(away_stats['avg_goals_conceded'], home_stats['avg_goals_conceded'])),
-        ("📊 Diff. de buts", home_stats['avg_goal_diff'], away_stats['avg_goal_diff'],
-         cmp_val(home_stats['avg_goal_diff'], away_stats['avg_goal_diff'])),
-        ("📈 Forme récente", home_stats['avg_outcome'], away_stats['avg_outcome'],
-         cmp_val(home_stats['avg_outcome'], away_stats['avg_outcome'])),
+        ("🏅 Classement FIFA", home_stats["rank"], away_stats["rank"],
+         cmp_val(away_stats["rank"], home_stats["rank"])),
+        ("⭐ Points FIFA", home_stats["total_points"], away_stats["total_points"],
+         cmp_val(home_stats["total_points"], away_stats["total_points"])),
+        ("⚽ Buts marqués (moy.)", home_stats["avg_goals_scored"], away_stats["avg_goals_scored"],
+         cmp_val(home_stats["avg_goals_scored"], away_stats["avg_goals_scored"])),
+        ("🛡️ Buts encaissés (moy.)", home_stats["avg_goals_conceded"], away_stats["avg_goals_conceded"],
+         cmp_val(away_stats["avg_goals_conceded"], home_stats["avg_goals_conceded"])),
+        ("📊 Diff. de buts", home_stats["avg_goal_diff"], away_stats["avg_goal_diff"],
+         cmp_val(home_stats["avg_goal_diff"], away_stats["avg_goal_diff"])),
+        ("📈 Forme récente", home_stats["avg_outcome"], away_stats["avg_outcome"],
+         cmp_val(home_stats["avg_outcome"], away_stats["avg_outcome"])),
     ]
 
     table_html = f'''<div class="glass" style="padding:0;overflow:hidden">
@@ -534,11 +549,12 @@ if predict:
     for label, hv, av, h_wins in rows:
         hc = "cmp-home-val cmp-winner" if h_wins else "cmp-home-val"
         ac = "cmp-away-val cmp-winner" if not h_wins else "cmp-away-val"
-        table_html += f'<tr><td>{label}</td><td class="{hc}">{hv}</td><td class="{ac}">{av}</td></tr>'
-    table_html += '</tbody></table></div></div>'
+        table_html += f'<tr><td>{label}</td><td class="{hc}">{fmt(hv, "N/A")}</td><td class="{ac}">{fmt(av, "N/A")}</td></tr>'
+    table_html += "</tbody></table></div></div>"
     st.markdown(table_html, unsafe_allow_html=True)
 
-    # ── Radar
+
+def render_radar_chart(home_stats: dict, away_stats: dict, home_team: str, away_team: str):
     st.markdown('<div class="sec"><span class="sec-dot"></span> Profil comparatif</div>', unsafe_allow_html=True)
 
     categories = ["Attaque", "Défense", "Forme", "Classement", "Points"]
@@ -546,38 +562,40 @@ if predict:
     def norm(val, mx):
         return min(val / mx * 10, 10) if mx else 0
 
+    home_rank = home_stats["rank"] if home_stats["rank"] is not None else 100
+    away_rank = away_stats["rank"] if away_stats["rank"] is not None else 100
+    home_points = home_stats["total_points"] if home_stats["total_points"] is not None else 0
+    away_points = away_stats["total_points"] if away_stats["total_points"] is not None else 0
+
     mx_s = max(home_stats["avg_goals_scored"], away_stats["avg_goals_scored"], 1)
     mx_c = max(home_stats["avg_goals_conceded"], away_stats["avg_goals_conceded"], 1)
-    mx_r = max(home_stats["rank"] or 100, away_stats["rank"] or 100, 1)
-    mx_p = max(home_stats["total_points"] or 1, away_stats["total_points"] or 1, 1)
+    mx_r = max(home_rank, away_rank, 1)
+    mx_p = max(home_points, away_points, 1)
 
-    h_radar = [
-        norm(home_stats["avg_goals_scored"], mx_s),
-        10 - norm(home_stats["avg_goals_conceded"], mx_c),
-        norm(home_stats["avg_outcome"] + 1, 2),
-        10 - norm(home_stats["rank"] or 100, mx_r),
-        norm(home_stats["total_points"] or 0, mx_p),
-    ]
-    a_radar = [
-        norm(away_stats["avg_goals_scored"], mx_s),
-        10 - norm(away_stats["avg_goals_conceded"], mx_c),
-        norm(away_stats["avg_outcome"] + 1, 2),
-        10 - norm(away_stats["rank"] or 100, mx_r),
-        norm(away_stats["total_points"] or 0, mx_p),
-    ]
+    def radar_values(scored, conceded, outcome, rank, points):
+        return [
+            norm(scored, mx_s),
+            10 - norm(conceded, mx_c),
+            norm(outcome + 1, 2),
+            10 - norm(rank, mx_r),
+            norm(points, mx_p),
+        ]
 
-    fig_r = go.Figure()
-    fig_r.add_trace(go.Scatterpolar(
+    h_radar = radar_values(home_stats["avg_goals_scored"], home_stats["avg_goals_conceded"], home_stats["avg_outcome"], home_rank, home_points)
+    a_radar = radar_values(away_stats["avg_goals_scored"], away_stats["avg_goals_conceded"], away_stats["avg_outcome"], away_rank, away_points)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(
         r=h_radar + [h_radar[0]], theta=categories + [categories[0]],
         fill="toself", name=home_team,
         line=dict(color="#4f8cff", width=2.5), fillcolor="rgba(79,140,255,0.12)",
     ))
-    fig_r.add_trace(go.Scatterpolar(
+    fig.add_trace(go.Scatterpolar(
         r=a_radar + [a_radar[0]], theta=categories + [categories[0]],
         fill="toself", name=away_team,
         line=dict(color="#22c55e", width=2.5), fillcolor="rgba(34,197,94,0.12)",
     ))
-    fig_r.update_layout(
+    fig.update_layout(
         polar=dict(
             bgcolor="rgba(0,0,0,0)",
             radialaxis=dict(visible=True, range=[0, 10], gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#64748b", size=9), linecolor="rgba(0,0,0,0.06)"),
@@ -589,14 +607,16 @@ if predict:
         margin=dict(l=50, r=50, t=30, b=60),
     )
     st.markdown('<div class="glass" style="padding:10px">', unsafe_allow_html=True)
-    st.plotly_chart(fig_r, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Recent form
+
+def render_recent_form(home_team: str, away_team: str, home_stats: dict, away_stats: dict):
     st.markdown('<div class="sec"><span class="sec-dot"></span> Forme récente (5 derniers matchs)</div>', unsafe_allow_html=True)
 
-    h_matches = home_stats.get("recent_matches", [])[-5:]
-    a_matches = away_stats.get("recent_matches", [])[-5:]
+    # recent_matches arrives oldest → newest; show the most recent match first.
+    h_matches = list(reversed(home_stats.get("recent_matches", [])))[:5]
+    a_matches = list(reversed(away_stats.get("recent_matches", [])))[:5]
 
     def render_matches(team_name, matches, dot_cls):
         html = f'<div class="glass" style="padding:18px"><div class="form-header"><span class="dot {dot_cls}"></span>{team_name}</div>'
@@ -606,7 +626,7 @@ if predict:
             badge_cls = f"mb-{m['outcome'].lower()}"
             html += f'''<div class="match-row">
                 <span class="match-badge {badge_cls}">{m['outcome']}</span>
-                <span class="match-teams">{m.get('opponent', '')}</span>
+                <span class="match-teams">vs {m.get('opponent', '?')}</span>
                 <span class="match-date">{m['date']}</span>
                 <span class="match-score">{m['goals_for']:.0f} – {m['goals_against']:.0f}</span>
             </div>'''
@@ -619,26 +639,27 @@ if predict:
     with mc2:
         st.markdown(render_matches(away_team, a_matches, "dot-away"), unsafe_allow_html=True)
 
-    # ── Goals evolution
+
+def render_goals_evolution(home_team: str, away_team: str, home_stats: dict, away_stats: dict):
     st.markdown('<div class="sec"><span class="sec-dot"></span> Évolution des buts (10 derniers matchs)</div>', unsafe_allow_html=True)
 
     h_goals = [m.get("goals_for", 0) for m in home_stats.get("recent_matches", [])[-10:]]
     a_goals = [m.get("goals_for", 0) for m in away_stats.get("recent_matches", [])[-10:]]
 
-    fig_g = go.Figure()
-    fig_g.add_trace(go.Scatter(
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
         y=h_goals, mode="lines+markers", name=home_team,
         line=dict(color="#4f8cff", width=3, shape="spline"),
         marker=dict(size=9, color="#4f8cff", line=dict(color="#050813", width=2)),
         fill="tozeroy", fillcolor="rgba(79,140,255,0.07)",
     ))
-    fig_g.add_trace(go.Scatter(
+    fig.add_trace(go.Scatter(
         y=a_goals, mode="lines+markers", name=away_team,
         line=dict(color="#22c55e", width=3, shape="spline"),
         marker=dict(size=9, color="#22c55e", line=dict(color="#050813", width=2)),
         fill="tozeroy", fillcolor="rgba(34,197,94,0.07)",
     ))
-    fig_g.update_layout(
+    fig.update_layout(
         height=300, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         xaxis=dict(gridcolor="rgba(0,0,0,0.04)", showgrid=False, zeroline=False, tickfont=dict(color="#64748b", size=10)),
         yaxis=dict(gridcolor="rgba(0,0,0,0.05)", zeroline=False, tickfont=dict(color="#64748b", size=10), title=dict(text="Buts marqués", font=dict(color="#475569", size=11))),
@@ -646,13 +667,47 @@ if predict:
         margin=dict(l=10, r=10, t=20, b=10), hovermode="x unified",
     )
     st.markdown('<div class="glass" style="padding:10px">', unsafe_allow_html=True)
-    st.plotly_chart(fig_g, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ═══ FOOTER ════════════════════════════════════════════
-st.markdown("""
-<div class="footer">
-    <p><strong>ISO Predict</strong> · Prédiction de matches internationaux par IA</p>
-    <p style="margin-top:4px;opacity:.5">Données FIFA · Modèle Machine Learning</p>
-</div>
-""", unsafe_allow_html=True)
+
+def render_footer():
+    st.markdown("""
+    <div class="footer">
+        <p><strong>ISO Predict</strong> · Prédiction de matches internationaux par IA</p>
+        <p style="margin-top:4px;opacity:.5">Données FIFA · Modèle Machine Learning</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ═══ MAIN FLOW ═════════════════════════════════════════
+render_navbar()
+render_hero()
+
+with st.spinner("Le serveur IA se réveille... (Cela peut prendre jusqu'à 2 minutes au premier lancement)"):
+    teams = fetch_teams()
+
+home_team, away_team, neutral, submit = render_match_selector(teams)
+
+if submit and home_team != away_team:
+    with st.spinner("Analyse en cours... (Le premier chargement peut prendre jusqu'à 2 minutes)"):
+        result = api_post("/predict", {
+            "home_team": home_team,
+            "away_team": away_team,
+            "neutral": neutral,
+        })
+
+    p_home, p_draw, p_away = render_prediction_box(result)
+    render_probability_bar(p_home, p_draw, p_away, home_team, away_team)
+
+    with st.spinner("Chargement des statistiques…"):
+        home_stats = fetch_team_stats(home_team)
+        away_stats = fetch_team_stats(away_team)
+
+    render_stat_cards(home_stats, away_stats, home_team, away_team)
+    render_comparison_table(home_stats, away_stats, home_team, away_team)
+    render_radar_chart(home_stats, away_stats, home_team, away_team)
+    render_recent_form(home_team, away_team, home_stats, away_stats)
+    render_goals_evolution(home_team, away_team, home_stats, away_stats)
+
+render_footer()

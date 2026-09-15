@@ -103,6 +103,7 @@ def get_team_stats(team: str):
     for _, row in recent.iterrows():
         recent_matches.append({
             "date": str(row["date"].date()) if hasattr(row["date"], "date") else str(row["date"]),
+            "opponent": str(row["opponent"]),
             "goals_for": round(float(row["goals_for"]), 1),
             "goals_against": round(float(row["goals_against"]), 1),
             "outcome": "W" if row["outcome"] > 0 else ("D" if row["outcome"] == 0 else "L"),
@@ -126,6 +127,8 @@ def predict(req: PredictRequest):
         raise HTTPException(status_code=404, detail=f"Équipe domicile '{req.home_team}' introuvable")
     if req.away_team not in METADATA.get("teams", []):
         raise HTTPException(status_code=404, detail=f"Équipe extérieur '{req.away_team}' introuvable")
+    if req.home_team == req.away_team:
+        raise HTTPException(status_code=400, detail="L'équipe domicile et l'équipe extérieure doivent être différentes")
 
     home_rank = home_points = away_rank = away_points = None
     for r in METADATA.get("rankings", []):
@@ -145,10 +148,10 @@ def predict(req: PredictRequest):
     input_data = pd.DataFrame(
         [
             {
-                "home_rank": home_rank or 100,
-                "away_rank": away_rank or 100,
-                "home_points": home_points or 0,
-                "away_points": away_points or 0,
+                "home_rank": home_rank if home_rank is not None else 100,
+                "away_rank": away_rank if away_rank is not None else 100,
+                "home_points": home_points if home_points is not None else 0,
+                "away_points": away_points if away_points is not None else 0,
                 "home_avg_scored": get_latest_stat(req.home_team, "avg_goals_scored"),
                 "home_avg_conceded": get_latest_stat(req.home_team, "avg_goals_conceded"),
                 "home_avg_outcome": get_latest_stat(req.home_team, "avg_outcome"),
